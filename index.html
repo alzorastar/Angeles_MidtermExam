@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+
+  <link
+    rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/css/all.min.css"
+    integrity="sha512-KfkfwYDsLkIlwQp6LFnl8zNdLGxu9YAA1QvwINks4PhcElQSvqcyVLLD9aMhXd13uQjoXtEKNosOWaZqXgel0g=="
+    crossorigin="anonymous"
+    referrerpolicy="no-referrer"
+  />
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <script src="https://kit.fontawesome.com/090fe43456.js" crossorigin="anonymous"></script>
+
+  <title>Authentication is Fun</title>
+
+  <style>
+    body {
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+      margin: 0;
+      background-color: rgb(136, 204, 207);
+      color: rgb(99, 81, 64);
+      font-family: Arial, sans-serif;
+    }
+
+    #authForm {
+      background-color: rgba(151, 255, 154, 0.995);
+      padding: 40px 20px;
+      border-radius: 10px;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+      max-width: 400px;
+      width: 100%;
+      margin: auto;
+      margin-bottom: auto;
+    }
+
+    .logo {
+      max-width: 150px;
+      margin: 0 auto 20px;
+      display: block;
+    }
+
+    #secretContent {
+      display: none;
+      padding: 40px 20px;
+      max-width: 600px;
+      margin: 40px auto;
+      background-color: rgba(151, 255, 154, 0.995);
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(255, 255, 255, 0.995);
+    }
+
+    #secretContent h2 {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+
+    #secretContent .form-group {
+      margin-bottom: 20px;
+    }
+
+    #secretContent input[type="text"] {
+      width: 100%;
+      padding: 10px;
+      border-radius: 5px;
+      border: none;
+      outline: none;
+    }
+
+    #secretContent .btn-group {
+      display: flex;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 20px;
+    }
+
+    #secretContent .btn-group button {
+      flex: 1;
+      padding: 10px;
+      background-color: cornflowerblue;
+      border: none;
+      color: white;
+      border-radius: 5px;
+    }
+
+    #signOutButton {
+      display: block;
+      margin: 30px auto 0;
+      background-color: #ffb4c3;
+      color: white;
+    }
+  </style>
+</head>
+<body>
+  <div id="authForm" class="container">
+    <img src="dragon.png" alt="Logo" class="logo" />
+    <input type="email" class="form-control mb-3" placeholder="Email" id="userEmail" required />
+    <input type="password" class="form-control mb-3" placeholder="Password" id="userPassword" required />
+    <button class="btn btn-primary btn-block mb-2" id="signUpButton" style="background-color: #ffb4c3; border: #ffb4c3;">Sign Up</button>
+    <button class="btn btn-secondary btn-block" id="signInButton" style="background-color: #ffb4c3; border: #ffb4c3;">Login</button>
+  </div>
+
+  <div id="secretContent">
+    <h2>CRUD with Firebase</h2>
+    <div class="form-group"><label for="roll">Roll No:</label><input type="text" id="roll" /></div>
+    <div class="form-group"><label for="name">Name:</label><input type="text" id="name" /></div>
+    <div class="form-group"><label for="gender">Gender:</label><input type="text" id="gender" /></div>
+    <div class="form-group"><label for="address">Address:</label><input type="text" id="address" /></div>
+    <div class="form-group"><label for="zodiacsign">Zodiac Sign:</label><input type="text" id="zodiacsign" /></div>
+    <div class="form-group"><label for="number">Number:</label><input type="text" id="number" /></div>
+    <div class="btn-group">
+      <button id="insert">Insert</button>
+      <button id="read">Read</button>
+      <button id="update">Update</button>
+      <button id="delete">Delete</button>
+    </div>
+    <button id="signOutButton" class="btn">Sign Out</button>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-app.js";
+    import {
+      getAuth,
+      createUserWithEmailAndPassword,
+      signInWithEmailAndPassword,
+      onAuthStateChanged,
+      signOut
+    } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-auth.js";
+    import {
+      getDatabase,
+      ref,
+      set,
+      get,
+      update,
+      remove,
+      child
+    } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-database.js";
+
+    const firebaseConfig = {
+     apiKey: "AIzaSyAGVbINKF9ieSMmOU-DrM9TaWrVZxa-UBU",
+     authDomain: "angeles-853d8.firebaseapp.com",
+     databaseURL: "https://angeles-853d8-default-rtdb.asia-southeast1.firebasedatabase.app",
+     projectId: "angeles-853d8",
+     storageBucket: "angeles-853d8.firebasestorage.app",
+     messagingSenderId: "800733125209",
+     appId: "1:800733125209:web:754fd12c616e7bca396f48"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getDatabase(app);
+
+    const userEmail = document.querySelector("#userEmail");
+    const userPassword = document.querySelector("#userPassword");
+    const authForm = document.querySelector("#authForm");
+    const secretContent = document.querySelector("#secretContent");
+    const signUpButton = document.querySelector("#signUpButton");
+    const signInButton = document.querySelector("#signInButton");
+    const signOutButton = document.querySelector("#signOutButton");
+
+    const roll = document.querySelector("#roll");
+    const name = document.querySelector("#name");
+    const gender = document.querySelector("#gender");
+    const address = document.querySelector("#address");
+    const zodiacsign = document.querySelector("#zodiacsign");
+    const number = document.querySelector("#number");
+
+    const clearForm = () => {
+      roll.value = "";
+      name.value = "";
+      gender.value = "";
+      address.value = "";
+      zodiacsign.value = "";
+      number.value = "";
+    };
+
+    const userSignUp = async () => {
+      createUserWithEmailAndPassword(auth, userEmail.value, userPassword.value)
+        .then(() => Swal.fire("Account created successfully!"))
+        .catch(error => Swal.fire("Error", error.message, "error"));
+    };
+
+    const userSignIn = async () => {
+      signInWithEmailAndPassword(auth, userEmail.value, userPassword.value)
+        .then(() => Swal.fire("Signed in successfully!"))
+        .catch(error => Swal.fire("Error", error.message, "error"));
+    };
+
+    const userSignOut = async () => {
+      await signOut(auth);
+      Swal.fire("User signed out");
+    };
+
+    const checkAuthState = async () => {
+      onAuthStateChanged(auth, user => {
+        if (user) {
+          authForm.style.display = "none";
+          secretContent.style.display = "block";
+        } else {
+          authForm.style.display = "block";
+          secretContent.style.display = "none";
+        }
+      });
+    };
+
+    const insertData = () => {
+      set(ref(db, 'users/' + roll.value), {
+        name: name.value,
+        gender: gender.value,
+        address: address.value,
+        zodiacsign: zodiacsign.value,
+        number: number.value
+      })
+      .then(() => {
+        Swal.fire("Data inserted successfully!");
+        clearForm();
+      })
+      .catch(error => Swal.fire("Error", error.message, "error"));
+    };
+
+    const readData = () => {
+      get(ref(db, 'users/' + roll.value)).then(snapshot => {
+        if (snapshot.exists()) {
+          const data = snapshot.val();
+          name.value = data.name;
+          gender.value = data.gender;
+          address.value = data.address;
+          zodiacsign.value = data.zodiacsign;
+          number.value = data.number;
+          Swal.fire("Data fetched successfully!");
+        } else {
+          Swal.fire("No data found!");
+        }
+      }).catch(error => Swal.fire("Error", error.message, "error"));
+    };
+
+    const updateData = () => {
+      update(ref(db, 'users/' + roll.value), {
+        name: name.value,
+        gender: gender.value,
+        address: address.value,
+        zodiacsign: zodiacsign.value,
+        number: number.value
+      })
+      .then(() => {
+        Swal.fire("Data updated successfully!");
+        clearForm();
+      })
+      .catch(error => Swal.fire("Error", error.message, "error"));
+    };
+
+    const deleteData = () => {
+      remove(ref(db, 'users/' + roll.value))
+        .then(() => {
+          Swal.fire("Data deleted successfully!");
+          clearForm();
+        })
+        .catch(error => Swal.fire("Error", error.message, "error"));
+    };
+
+    checkAuthState();
+
+    signUpButton.addEventListener("click", userSignUp);
+    signInButton.addEventListener("click", userSignIn);
+    signOutButton.addEventListener("click", userSignOut);
+
+    document.querySelector("#insert").addEventListener("click", insertData);
+    document.querySelector("#read").addEventListener("click", readData);
+    document.querySelector("#update").addEventListener("click", updateData);
+    document.querySelector("#delete").addEventListener("click", deleteData);
+  </script>
+</body>
+</html>
